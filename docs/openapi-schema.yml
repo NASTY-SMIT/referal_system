@@ -1,0 +1,252 @@
+openapi: 3.0.0
+info:
+  title: My Project API
+  version: 1.0.0
+paths:
+  /auth/users/:
+    post:
+      summary: Регистрация пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                username:
+                  type: string
+                password:
+                  type: string
+                referral_code:
+                  type: string
+                  description: Реферальный код (опционально). Если указан, пользователь будет зарегистрирован как реферал по этому коду.
+      responses:
+        '201':
+          description: Пользователь успешно зарегистрирован
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    format: email
+                  username:
+                    type: string
+        '400':
+          description: Ошибка в запросе
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      tags:
+        - Пользователи
+  /auth/token/login/:
+    post:
+      summary: Получение JWT токена
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: JWT токен успешно получен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  auth_token:
+                    type: string
+        '400':
+          description: Ошибка в запросе
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      tags:
+        - Пользователи
+  /auth/users/me/:
+    get:
+      summary: Получение информации о текущем пользователе
+      security:
+        - Token: []
+      responses:
+        '200':
+          description: Информация о текущем пользователе
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    format: email
+                  id:
+                    type: integer
+        '401':
+          description: Пользователь не авторизован
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      tags:
+        - Пользователи
+  /api/referral_codes/create/:
+    post:
+      summary: Создание реферального кода
+      tags:
+        - Реферальные коды
+      security:
+        - Token: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expiration_date:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Реферальный код успешно создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  expiration_date:
+                    type: string
+                    format: date
+        '400':
+          description: Ошибка в запросе
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/referral_codes/delete/:
+    delete:
+      summary: Удаление реферального кода
+      tags:
+        - Реферальные коды
+      security:
+        - Token: []
+      responses:
+        '204':
+          description: Реферальный код успешно удален
+        '404':
+          description: Реферальный код не найден
+
+  /api/referral_codes/get/{email}/:
+    get:
+      summary: Получение реферального кода по email адресу
+      tags:
+        - Реферальные коды
+      security:
+        - Token: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: Email адрес пользователя, для которого нужно получить реферальный код
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Реферальный код успешно получен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  expiration_date:
+                    type: string
+                    format: date
+        '400':
+          description: Ошибка в запросе
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /api/users/{referrer_id}/:
+    get:
+      summary: Получение рефералов по id реферера
+      tags:
+        - Реферальные коды
+      security:
+        - Token: []
+      parameters:
+        - name: referrer_id
+          in: path
+          required: true
+          description: ID пользователя, для которого нужно получить рефералов
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список рефералов успешно получен
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                    id:
+                      type: integer
+        '404':
+          description: Пользователь не найден
+
+components:
+  securitySchemes:
+    Token:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "Все запросы от имени пользователя должны выполняться с заголовком 'Authorization': Token TOKENVALUE"
+tags:
+  - name: Пользователи
+    description: Эндпоинты для работы с пользователями
+    externalDocs:
+      description: Djoser
+      url: "https://djoser.readthedocs.io/en/latest/"
+  - name: Реферальные коды
+    description: Эндпоинты для работы с реферальными кодами
